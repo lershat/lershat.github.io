@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Счётчик Символов</title>
+    <style>
+        /* CSS variables for theming */
+        :root {
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --container-bg: #ffffff;
+            --header-color: #2c3e50;
+            --input-border-color: #ddd;
+            --input-focus-border: #5cb85c;
+            --input-bg-color: #fff;
+            --input-text-color: #333;
+            --result-bg: #e9ecef;
+            --result-text-color: #2c3e50;
+            --highlight-color: #5cb85c;
+            --button-bg: #e0e0e0;
+            --button-hover-bg: #d0d0d0;
+            --button-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme {
+            --bg-color: #23272f; /* Dark background */
+            --text-color: #e0e0e0; /* Light text */
+            --container-bg: #2c3e50; /* Darker container */
+            --header-color: #ecf0f1; /* Light header */
+            --input-border-color: #566573;
+            --input-focus-border: #1abc9c; /* A different highlight for dark theme */
+            --input-bg-color: #34495e;
+            --input-text-color: #ecf0f1;
+            --result-bg: #3e5771;
+            --result-text-color: #ecf0f1;
+            --highlight-color: #1abc9c;
+            --button-bg: #4a5568;
+            --button-hover-bg: #2d3748;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 25px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 700px; /* Increased max-width for more content */
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+
+        h1 {
+            color: var(--header-color);
+            margin-bottom: 15px;
+            transition: color 0.3s;
+        }
+
+        p {
+            font-size: 1.1em;
+            color: var(--text-color); /* Use text-color for general paragraphs */
+            margin-bottom: 20px;
+            transition: color 0.3s;
+        }
+
+        textarea {
+            width: calc(100% - 22px); /* Account for padding and border */
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--input-border-color);
+            background-color: var(--input-bg-color);
+            color: var(--input-text-color);
+            border-radius: 4px;
+            font-size: 1em;
+            min-height: 150px;
+            box-sizing: border-box;
+            resize: vertical;
+            transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 5px color-mix(in srgb, var(--input-focus-border) 50%, transparent);
+        }
+
+        .result-container, .additional-counters {
+            margin-top: 15px;
+            background-color: var(--result-bg);
+            padding: 15px; /* Increased padding */
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .result-container p, .additional-counters p {
+            font-size: 1.1em; /* Slightly smaller for more counters */
+            font-weight: bold;
+            color: var(--result-text-color);
+            margin: 8px 0; /* Spacing between counter lines */
+            transition: color 0.3s;
+        }
+
+        #charCountOutput,
+        #pageCountOutput,
+        #authorSheetOutput,
+        #bookPercentageOutput {
+            color: var(--highlight-color);
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        /* Theme Switcher Button */
+        .theme-switcher {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--input-border-color);
+            border-radius: 8px; /* More rounded square */
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em; /* For emoji icon */
+            box-shadow: var(--button-shadow);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .theme-switcher:hover {
+            background-color: var(--button-hover-bg);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .theme-switcher:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--input-focus-border) 40%, transparent);
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-switcher" id="themeSwitcher" aria-label="Переключить тему">☀️</button>
+
+    <div class="container">
+        <h1>Счётчик Символов</h1>
+        <p>Введите или вставьте ваш текст ниже, чтобы увидеть статистику.</p>
+
+        <textarea id="textInput" placeholder="Начните печатать или вставьте текст здесь..." rows="10"></textarea>
+
+        <div class="result-container">
+            <p>Количество символов: <span id="charCountOutput">0</span></p>
+        </div>
+
+        <div class="additional-counters">
+            <p>Страниц (≈1800 зн.): <span id="pageCountOutput">0.00</span></p>
+            <p>Авторских листов (40000 зн.): <span id="authorSheetOutput">0.00</span></p>
+            <p>Процент от книги (≈400тыс. зн.): <span id="bookPercentageOutput">0.00</span>%</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const textInput = document.getElementById('textInput');
+            const charCountOutput = document.getElementById('charCountOutput');
+            const pageCountOutput = document.getElementById('pageCountOutput');
+            const authorSheetOutput = document.getElementById('authorSheetOutput');
+            const bookPercentageOutput = document.getElementById('bookPercentageOutput');
+            const themeSwitcherBtn = document.getElementById('themeSwitcher');
+            const body = document.body;
+
+            const CHARS_PER_PAGE = 1800;
+            const CHARS_PER_AUTHOR_SHEET = 40000;
+            const CHARS_PER_BOOK = 400000;
+
+            // Function to update all counts
+            function updateCounts() {
+                const text = textInput.value;
+                const count = text.length;
+
+                charCountOutput.textContent = count;
+
+                const pageCount = (count / CHARS_PER_PAGE).toFixed(2);
+                pageCountOutput.textContent = pageCount;
+
+                const authorSheetCount = (count / CHARS_PER_AUTHOR_SHEET).toFixed(2);
+                authorSheetOutput.textContent = authorSheetCount;
+
+                const bookPercentage = ((count / CHARS_PER_BOOK) * 100).toFixed(2);
+                bookPercentageOutput.textContent = bookPercentage;
+            }
+
+            // Initial count update
+            updateCounts();
+
+            // Add event listener for input changes
+            textInput.addEventListener('input', updateCounts);
+
+            // --- Theme Switcher Logic ---
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    body.classList.add('dark-theme');
+                    themeSwitcherBtn.textContent = '🌙'; // Moon for dark theme
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    body.classList.remove('dark-theme');
+                    themeSwitcherBtn.textContent = '☀️'; // Sun for light theme
+                    localStorage.setItem('theme', 'light');
+                }
+            }
+
+            themeSwitcherBtn.addEventListener('click', () => {
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                if (currentTheme === 'light') {
+                    applyTheme('dark');
+                } else {
+                    applyTheme('light');
+                }
+            });
+
+            // Load saved theme from localStorage or default to light
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else {
+                // Optional: check system preference if no theme is saved
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !savedTheme) {
+                    applyTheme('dark');
+                } else {
+                    applyTheme('light'); // Default
+                }
+            }
+            // Listen for system theme changes (optional, but good UX)
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (!localStorage.getItem('theme')) { // Only if user hasn't manually set a theme
+                    if (e.matches) {
+                        applyTheme('dark');
+                    } else {
+                        applyTheme('light');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
